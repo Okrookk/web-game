@@ -1,0 +1,53 @@
+{
+    "PLAYER_SPEED": 5,
+    "BULLET_SPEED": 10,
+    "ENEMY_SPEED": 2,
+    "PLAYER_SIZE": 32,
+    "BULLET_SIZE": 24,
+    "BULLET_RANGE": 500,
+    "ENEMY_SIZE": 32,
+    "MAP_WIDTH": 1200,
+    "MAP_HEIGHT": 870,
+    "FIRE_RATE": 200,
+    "ENEMY_SPAWN_RATE": 2000,
+    "POINTS_PER_KILL": 10,
+    "FLASK_DROP_RATE": 0.3,
+    "HEART_DROP_RATE": 0.05,
+    "ITEM_SIZE": 24,
+    "WALL_TOP_BOT_HEIGHT": 49,
+    "WALL_SIDE_WIDTH": 50,
+    "MIN_PLAYERS": 2,
+    "MAX_PLAYERS": 4,
+    "GAME_DURATION": 120000,
+    "COUNTDOWN_DURATION": 12000,
+    "GAME_STATE": {
+        "WAITING": "WAITING",
+        "COUNTDOWN": "COUNTDOWN",
+        "PLAYING": "PLAYING",
+        "GAME_OVER": "GAME_OVER"
+    },
+    "ASSETS": {
+        "ITEMS": {
+            "HP_FLASK": [
+                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_1.png",
+                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_2.png",
+                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_3.png",
+                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_4.png"
+            ],
+            "HEART": [
+                "assets/custom/heart.png"
+            ]
+        },
+        "PLAYER_IDLE": [
+            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_1.png",
+            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_2.png",
+            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_3.png",
+            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_4.png"
+        ],
+        "ENEMIES": {
+            "SKELETON1": "Enemy_Animations_Set/enemies-skeleton1_movement.png",
+            "SKELETON2": "Enemy_Animations_Set/enemies-skeleton2_movemen.png",
+            "VAMPIRE": "Enemy_Animations_Set/enemies-vampire_movement.png"
+        }
+    }
+}

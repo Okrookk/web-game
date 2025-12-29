@@ -1,0 +1,445 @@
+body,
+html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a0f0a;
+    /* Darker, wood-like background */
+    color: #e0c097;
+    /* Parchment text color */
+    font-family: 'MedievalSharp', cursive;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-color: #2b1d14;
+    /* Dirt/Ground color for game bg */
+    overflow: hidden;
+}
+
+.game-entity {
+    position: absolute;
+    transform-origin: center center;
+    will-change: transform;
+    /* Hint for GPU acceleration */
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* Let clicks pass through to game if needed, but UI elements will re-enable it */
+    display: flex;
+    flex-direction: column;
+}
+
+#join-screen {
+    pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4e342e;
+    /* Dark Wood */
+    border: 4px solid #bcaaa4;
+    /* Silver/Iron border */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    padding: 3rem;
+    border-radius: 4px;
+    /* Slight rounding, mostly boxy */
+    text-align: center;
+    color: #ffd700;
+    /* Gold text */
+}
+
+#join-screen h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px #000;
+}
+
+#username-input {
+    display: block;
+    margin: 0 auto 1.5rem auto;
+    padding: 10px;
+    font-size: 1.2rem;
+    font-family: 'MedievalSharp', cursive;
+    background: #d7ccc8;
+    /* Light parchment */
+    color: #3e2723;
+    border: 2px solid #5d4037;
+    border-radius: 4px;
+    width: 250px;
+    text-align: center;
+}
+
+#join-btn {
+    padding: 10px 30px;
+    font-size: 1.5rem;
+    font-family: 'MedievalSharp', cursive;
+    background: #5d4037;
+    /* Button color */
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+#join-btn:hover {
+    background: #795548;
+    transform: scale(1.05);
+}
+
+#join-btn:disabled {
+    background: #3e2723;
+    color: #777;
+    border-color: #555;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#lobby-screen {
+    pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4e342e;
+    border: 4px solid #bcaaa4;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    padding: 3rem;
+    border-radius: 4px;
+    text-align: center;
+    color: #ffd700;
+    min-width: 400px;
+}
+
+#lobby-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px #000;
+}
+
+#player-list {
+    margin: 2rem 0;
+    min-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.player-item {
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 1.2rem;
+}
+
+#lobby-info {
+    margin: 1.5rem 0;
+    font-size: 1.1rem;
+}
+
+#lobby-info p {
+    margin: 0.5rem 0;
+}
+
+#start-game-btn {
+    padding: 10px 30px;
+    font-size: 1.5rem;
+    font-family: 'MedievalSharp', cursive;
+    background: #5d4037;
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    margin: 1rem auto 0 auto;
+    display: block;
+    /* Ensure it respects auto margins if JS doesn't set it */
+}
+
+#start-game-btn:hover {
+    background: #795548;
+    transform: scale(1.05);
+}
+
+#start-game-btn:disabled {
+    background: #3e2723;
+    color: #777;
+    border-color: #555;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#hud {
+    pointer-events: auto;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 2px #000;
+    align-items: center;
+}
+
+#hp-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#hud-hp-bar-bg {
+    width: 200px;
+    height: 20px;
+    background: #333;
+    border: 2px solid #5d4037;
+    position: relative;
+    border-radius: 4px;
+}
+
+#hud-hp-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: #d32f2f;
+    /* Red */
+    border-radius: 2px;
+    transition: width 0.1s;
+}
+
+#hud-hp-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+#fps-counter {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1rem;
+    color: lime;
+    pointer-events: none;
+}
+
+#game-menu {
+    display: flex;
+    gap: 10px;
+}
+
+#game-menu button {
+    padding: 8px 16px;
+    font-size: 1rem;
+    font-family: 'MedievalSharp', cursive;
+    background: #5d4037;
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#game-menu button:hover {
+    background: #795548;
+    transform: scale(1.05);
+}
+
+#countdown-screen {
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 2000;
+}
+
+#countdown-screen h1 {
+    font-size: 10rem;
+    color: #ffd700;
+    text-shadow: 4px 4px 8px #000, 0 0 20px #ffd700;
+    margin: 0;
+    animation: countdownPulse 1s infinite;
+    font-family: 'MedievalSharp', cursive;
+}
+
+#countdown-screen p {
+    font-size: 2rem;
+    color: #bcaaa4;
+    margin-top: 1rem;
+    text-shadow: 2px 2px 4px #000;
+}
+
+@keyframes countdownPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+#pause-screen {
+    pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4e342e;
+    border: 4px solid #bcaaa4;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    padding: 3rem;
+    border-radius: 4px;
+    text-align: center;
+    color: #ffd700;
+    min-width: 400px;
+    z-index: 1000;
+}
+
+#pause-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px #000;
+}
+
+#pause-message {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: #bcaaa4;
+}
+
+#pause-screen button {
+    padding: 10px 30px;
+    font-size: 1.2rem;
+    font-family: 'MedievalSharp', cursive;
+    background: #5d4037;
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    margin: 0.5rem;
+}
+
+#pause-screen button:hover {
+    background: #795548;
+    transform: scale(1.05);
+}
+
+/* In-world HP Bar */
+.world-hp-bar-bg {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: #000;
+}
+
+.world-hp-bar-fill {
+    height: 100%;
+    background: #d32f2f;
+    width: 100%;
+}
+
+/* Lives Display */
+#lives-display {
+    font-size: 1.3rem;
+    color: #ff6b6b;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* Death Screen */
+#death-screen {
+    pointer-events: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+#death-screen h1 {
+    font-size: 5rem;
+    color: #d32f2f;
+    text-shadow: 3px 3px 6px #000;
+    margin: 0;
+    animation: pulse 2s infinite;
+}
+
+#death-screen p {
+    font-size: 2rem;
+    color: #bcaaa4;
+    margin-top: 1rem;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+#game-over-screen {
+    pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4e342e;
+    border: 4px solid #bcaaa4;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    padding: 3rem;
+    border-radius: 4px;
+    text-align: center;
+    color: #ffd700;
+    min-width: 450px;
+    z-index: 2000;
+}
+
+.settings-btn {
+    padding: 5px 10px;
+    font-size: 1rem;
+    font-family: 'MedievalSharp', cursive;
+    background: #5d4037;
+    color: #ffd700;
+    border: 1px solid #ffd700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.settings-btn:hover {
+    background: #795548;
+}

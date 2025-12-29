@@ -1,0 +1,23 @@
+{
+    "name": "dom-shooter",
+    "version": "1.0.0",
+    "scripts": {
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "dev:single": "concurrently \"cross-env DEV_MODE=true npm run server\" \"npm run client\"",
+        "server": "nodemon src/server/server.js --ignore client/",
+        "client": "vite",
+        "start": "node src/server/server.js",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "socket.io": "^4.7.2",
+        "socket.io-client": "^4.7.2"
+    },
+    "devDependencies": {
+        "concurrently": "^9.2.1",
+        "cross-env": "^10.1.0",
+        "nodemon": "^3.0.1",
+        "vite": "^7.3.0"
+    }
+}

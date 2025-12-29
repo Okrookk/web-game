@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Dom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/client/style.css">
+</head>
+
+<body>
+    <div id="game-container"></div>
+    <div id="ui-layer">
+        <div id="join-screen">
+            <h1>Dungeon Dom</h1>
+            <input type="text" id="username-input" placeholder="Enter Username" autofocus>
+            <button id="join-btn">Join Game</button>
+        </div>
+        <div id="lobby-screen" style="display: none;">
+            <h2>Waiting for Players</h2>
+            <div id="player-list"></div>
+            <div id="lobby-info">
+                <p>Players: <span id="player-count">0</span>/4</p>
+                <p id="waiting-message">Waiting for more players to join...</p>
+                <div id="lobby-settings" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button id="toggle-music-btn" class="settings-btn">Mute Music</button>
+                    <button id="toggle-effects-btn" class="settings-btn">Mute Effects</button>
+                </div>
+            </div>
+            <button id="start-game-btn" style="display: none;">Start Game</button>
+        </div>
+        <div id="hud" style="display: none;">
+            <div id="hp-container">
+                <div>HP:</div>
+                <div id="hud-hp-bar-bg">
+                    <div id="hud-hp-bar-fill"></div>
+                    <div id="hud-hp-text">100 / 100</div>
+                </div>
+            </div>
+            <div id="lives-display">Lives: 3</div>
+            <div id="score-board"></div>
+            <div id="timer">Time: 0</div>
+            <div id="game-menu">
+                <button id="pause-btn">Pause</button>
+                <button id="quit-btn">Quit</button>
+            </div>
+        </div>
+        <div id="death-screen" style="display: none;">
+            <h1>YOU'RE DEAD</h1>
+            <p>Spectating...</p>
+        </div>
+        <div id="game-over-screen" style="display: none;">
+            <div id="leaderboard-content"></div>
+        </div>
+        <div id="pause-screen" style="display: none;">
+            <h2>Game Paused</h2>
+            <p id="pause-message">Game is paused</p>
+            <div id="pause-settings" style="margin-bottom: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button id="pause-toggle-music" class="settings-btn">Mute Music</button>
+                <button id="pause-toggle-effects" class="settings-btn">Mute Effects</button>
+            </div>
+            <button id="resume-btn">Resume</button>
+            <button id="quit-from-pause-btn">Quit Game</button>
+        </div>
+        <div id="countdown-screen" style="display: none;">
+            <h1 id="countdown-number">3</h1>
+            <p>Get ready!</p>
+        </div>
+        <div id="fps-counter">FPS: 0</div>
+    </div>
+    <script type="module" src="./src/client/main.js"></script>
+</body>
+
+</html>
