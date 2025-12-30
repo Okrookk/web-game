@@ -463,8 +463,12 @@ export class Renderer {
 
             // Update Lives Display
             if (this.livesDisplay) {
-                // Remove existing content
-                this.livesDisplay.innerHTML = 'Lives: ';
+                // Clear existing content
+                this.livesDisplay.innerHTML = '';
+                
+                // Create "Lives: " text node
+                const livesLabel = document.createTextNode('Lives: ');
+                this.livesDisplay.appendChild(livesLabel);
 
                 // Add heart icons
                 const lives = myPlayer.lives || 0;
@@ -472,15 +476,25 @@ export class Renderer {
                     for (let i = 0; i < lives; i++) {
                         const heartImg = document.createElement('img');
                         heartImg.src = '/assets/custom/heart.png';
+                        heartImg.alt = 'Heart';
                         heartImg.style.width = '24px';
                         heartImg.style.height = '24px';
                         heartImg.style.verticalAlign = 'middle';
                         heartImg.style.marginRight = '2px';
                         heartImg.style.imageRendering = 'pixelated';
+                        heartImg.style.display = 'inline-block';
                         this.livesDisplay.appendChild(heartImg);
                     }
                 } else {
-                    this.livesDisplay.innerHTML = 'Lives: <img src="/assets/custom/skull.png" style="width:24px;height:24px;vertical-align:middle;image-rendering:pixelated;">';
+                    const skullImg = document.createElement('img');
+                    skullImg.src = '/assets/custom/skull.png';
+                    skullImg.alt = 'Skull';
+                    skullImg.style.width = '24px';
+                    skullImg.style.height = '24px';
+                    skullImg.style.verticalAlign = 'middle';
+                    skullImg.style.imageRendering = 'pixelated';
+                    skullImg.style.display = 'inline-block';
+                    this.livesDisplay.appendChild(skullImg);
                 }
             }
 

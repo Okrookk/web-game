@@ -32,8 +32,9 @@ const PORT = process.env.PORT || 3000;
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
+    // Serve dist folder (built frontend)
     app.use(express.static(path.join(__dirname, '../../dist')));
-
+    
     // Serve assets folder (images, sounds, etc.)
     app.use('/assets', express.static(path.join(__dirname, '../../assets')));
     
@@ -41,6 +42,10 @@ if (process.env.NODE_ENV === 'production') {
     app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '../../dist/index.html'));
     });
+} else {
+    // In development, also serve assets from /assets path
+    // (Vite serves them from root, but we want /assets path for consistency)
+    app.use('/assets', express.static(path.join(__dirname, '../../assets')));
 }
 
 io.on('connection', (socket) => {

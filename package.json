@@ -6,7 +6,7 @@
         "dev:single": "concurrently \"cross-env DEV_MODE=true npm run server\" \"npm run client\"",
         "server": "nodemon src/server/server.js --ignore client/",
         "client": "vite",
-        "start": "node src/server/server.js",
+        "start": "NODE_ENV=production node src/server/server.js",
         "build": "vite build"
     },
     "dependencies": {

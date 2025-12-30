@@ -60,8 +60,8 @@ class ServerGame {
         // Entity ID counter
         this.entityIdCounter = 0;
 
-        // Loop at 60 FPS
-        setInterval(() => this.update(), 1000 / 30);
+        // Loop at 60 FPS (needed for smooth gameplay)
+        setInterval(() => this.update(), 1000 / 60);
 
         // Send initial lobby state
         this.broadcastLobbyState();
@@ -892,12 +892,6 @@ class ServerGame {
     sendGameState() {
         const now = Date.now();
 
-        // Throttle state sending to reduce network traffic
-        if (now - this.lastStateSend < this.stateSendInterval) {
-            return; // Skip sending if too soon
-        }
-        this.lastStateSend = now;
-        
         // Calculate timer (count down)
         // Timer should not count down when paused
         let timer = 0;
