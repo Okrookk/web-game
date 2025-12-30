@@ -10,7 +10,15 @@ console.log('Client initializing...');
 // Auto-detect server URL: use environment variable in production, localhost in dev
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || (window.location.protocol === 'https:' ? window.location.origin : 'http://localhost:3000');
 const socket = io(SERVER_URL, {
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    // Optimize for production - reduce reconnection attempts
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 5,
+    // Use WebSocket first for better performance
+    upgrade: true,
+    rememberUpgrade: true
 });
 let gameInstance;
 

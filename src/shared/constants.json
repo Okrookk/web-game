@@ -29,25 +29,25 @@
     "ASSETS": {
         "ITEMS": {
             "HP_FLASK": [
-                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_1.png",
-                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_2.png",
-                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_3.png",
-                "2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_4.png"
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_1.png",
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_2.png",
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_3.png",
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_4_4.png"
             ],
             "HEART": [
                 "assets/custom/heart.png"
             ]
         },
         "PLAYER_IDLE": [
-            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_1.png",
-            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_2.png",
-            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_3.png",
-            "2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_4.png"
+            "assets/2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_1.png",
+            "assets/2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_2.png",
+            "assets/2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_3.png",
+            "assets/2D Pixel Dungeon Asset Pack/Character_animation/priests_idle/priest1/v1/priest1_v1_4.png"
         ],
         "ENEMIES": {
-            "SKELETON1": "Enemy_Animations_Set/enemies-skeleton1_movement.png",
-            "SKELETON2": "Enemy_Animations_Set/enemies-skeleton2_movemen.png",
-            "VAMPIRE": "Enemy_Animations_Set/enemies-vampire_movement.png"
+            "SKELETON1": "assets/Enemy_Animations_Set/enemies-skeleton1_movement.png",
+            "SKELETON2": "assets/Enemy_Animations_Set/enemies-skeleton2_movemen.png",
+            "VAMPIRE": "assets/Enemy_Animations_Set/enemies-vampire_movement.png"
         }
     }
 }

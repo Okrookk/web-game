@@ -18,7 +18,12 @@ const io = new Server(server, {
     cors: {
         origin: "*", // Allow all for dev
         methods: ["GET", "POST"]
-    }
+    },
+    // Optimize for production - reduce ping interval
+    pingInterval: 25000, // Default 25000ms
+    pingTimeout: 20000,  // Default 20000ms
+    // Enable compression
+    transports: ['websocket', 'polling']
 });
 
 const game = new ServerGame(io);
@@ -28,6 +33,9 @@ const PORT = process.env.PORT || 3000;
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../../dist')));
+
+    // Serve assets folder (images, sounds, etc.)
+    app.use('/assets', express.static(path.join(__dirname, '../../assets')));
     
     // Serve index.html for all routes (SPA routing)
     app.get('*', (req, res) => {
