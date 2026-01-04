@@ -11,7 +11,8 @@ export class SoundManager {
             'fireball': '/assets/sounds/fireball.mp3',
             'death': '/assets/sounds/death.mp3',
             'gameover': '/assets/sounds/gameover.mp3',
-            'pickup': '/assets/sounds/pickup.mp3'
+            'pickup': '/assets/sounds/pickup.mp3',
+            'menu': '/assets/sounds/menu.mp3'
         };
 
         this.loadSounds();
@@ -29,6 +30,8 @@ export class SoundManager {
                 audio.volume = 0.4;
             } else if (key === 'pickup') {
                 audio.volume = 0.8;
+            } else if (key === 'menu') {
+                audio.volume = 0.5;
             } else {
                 audio.volume = 0.6;
             }

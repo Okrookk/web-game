@@ -95,11 +95,48 @@ export class Renderer {
         // FPS Logic
         this.frameCount = 0;
         this.lastFpsUpdate = 0;
+
+        this.preloadAssets();
+
+        this.lastHp = new Map(); // id -> hp
+    }
+
+    preloadAssets() {
+        const preload = (obj) => {
+            for (const key in obj) {
+                const value = obj[key];
+                if (typeof value === 'string') {
+                    if (value.startsWith('assets/') || value.startsWith('/assets/')) {
+                        const img = new Image();
+                        img.src = value.startsWith('/') ? value : `/${value}`;
+                    }
+                } else if (Array.isArray(value)) {
+                    value.forEach(path => {
+                        const img = new Image();
+                        img.src = path.startsWith('/') ? path : `/${path}`;
+                    });
+                } else if (typeof value === 'object') {
+                    preload(value);
+                }
+            }
+        };
+
+        const extras = [
+            '/assets/custom/fireball.png',
+            '/assets/custom/skull.png',
+            '/assets/custom/heart.png'
+        ];
+        extras.forEach(path => {
+            const img = new Image();
+            img.src = path;
+        });
+
+        preload(ASSETS);
     }
 
     createNameTag(element, username) {
         if (element.querySelector('.name-tag')) return;
-        
+
         const nameTag = document.createElement('div');
         nameTag.classList.add('name-tag');
         nameTag.innerText = username || 'Player';
@@ -311,6 +348,14 @@ export class Renderer {
                     el.style.backgroundImage = `url("/${ASSETS.PLAYER_IDLE[frameIndex]}")`;
                     el.innerHTML = ''; // Clear skull if it was there
                     this.createNameTag(el, entity.username);
+
+                    // Shield visual effect
+                    if (entity.shieldEndTime && entity.shieldEndTime > time) {
+                        el.style.filter = 'drop-shadow(0 0 5px #0000ff) drop-shadow(0 0 10px #00ccff)';
+                    } else if (!el.classList.contains('damage-flash')) {
+                        // Clear filter if not shielded and not flashing red
+                        el.style.filter = 'none';
+                    }
                 }
             } else if (entity.type === 'enemy') {
                 // Animate enemies
@@ -357,6 +402,16 @@ export class Renderer {
                         el.style.backgroundRepeat = 'no-repeat';
                         el.style.imageRendering = 'pixelated';
                     }
+                } else if (entity.itemType === 'SHIELD_POTION') {
+                    const frames = ASSETS.ITEMS.SHIELD_POTION;
+                    if (frames && frames.length > 0) {
+                        const frameRate = 200;
+                        const frameIndex = Math.floor(time / frameRate) % frames.length;
+                        el.style.backgroundImage = `url("/${frames[frameIndex]}")`;
+                        el.style.backgroundSize = 'contain';
+                        el.style.backgroundRepeat = 'no-repeat';
+                        el.style.imageRendering = 'pixelated';
+                    }
                 }
             }
 
@@ -365,6 +420,21 @@ export class Renderer {
             const x = entity.x;
             const y = entity.y;
             const rot = entity.rotation || 0;
+
+            // Damage Flash Logic
+            let currentHp = entity.hp;
+            if (entity.type === 'player' || entity.type === 'enemy') {
+                const prevHp = this.lastHp.get(id);
+                // Check if HP decreased (damage taken)
+                if (prevHp !== undefined && currentHp < prevHp) {
+                    el.classList.add('damage-flash');
+                    // Remove class after animation
+                    setTimeout(() => {
+                        el.classList.remove('damage-flash');
+                    }, 200);
+                }
+                this.lastHp.set(id, currentHp);
+            }
 
             el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}rad)`;
         }
@@ -381,18 +451,18 @@ export class Renderer {
         // Calculate scale to fit entire map on screen
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
-        
+
         // Calculate scale to fit map (with some padding)
         const scaleX = winWidth / MAP_WIDTH;
         const scaleY = winHeight / MAP_HEIGHT;
         const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to add some padding
-        
+
         // Center the map on screen
         const scaledWidth = MAP_WIDTH * scale;
         const scaledHeight = MAP_HEIGHT * scale;
         const offsetX = (winWidth - scaledWidth) / 2;
         const offsetY = (winHeight - scaledHeight) / 2;
-        
+
         // Apply transform to show entire map
         this.world.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) scale(${scale})`;
         this.world.style.transformOrigin = 'top left';
@@ -446,7 +516,7 @@ export class Renderer {
             if (this.livesDisplay) {
                 // Clear existing content
                 this.livesDisplay.innerHTML = '';
-                
+
                 // Create "Lives: " text node
                 const livesLabel = document.createTextNode('Lives: ');
                 this.livesDisplay.appendChild(livesLabel);

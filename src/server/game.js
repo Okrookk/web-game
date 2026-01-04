@@ -20,6 +20,8 @@ const {
     WALL_SIDE_WIDTH,
     FLASK_DROP_RATE,
     HEART_DROP_RATE,
+    SHIELD_DROP_RATE,
+    SHIELD_DURATION,
     ITEM_SIZE
 } = require('../shared/constants');
 
@@ -164,7 +166,8 @@ class ServerGame {
             lives: 3, // Start with 3 lives
             isDead: false, // Track if player has lost all lives
             survivalTime: 0, // Track total survival time in ms
-            spaceHeld: false // Track if space bar is being held
+            spaceHeld: false, // Track if space bar is being held
+            shieldEndTime: 0 // Timestamp when shield expires
         };
 
         // Update state if needed
@@ -292,6 +295,7 @@ class ServerGame {
             p.isDead = false; // Reset death status
             p.survivalTime = 0; // Reset survival time
             p.spaceHeld = false; // Reset input state
+            p.shieldEndTime = 0;
         }
 
         // Clear projectiles and enemies
@@ -760,9 +764,11 @@ class ServerGame {
                         }
 
                         // Drop item chance
-                        // Prioritize Heart drop (rare), then Flask
+                        // Prioritize Heart drop (rare), then Shield (uncommon), then Flask (common)
                         if (Math.random() < HEART_DROP_RATE) {
                             this.spawnItem(e.x, e.y, 'HEART');
+                        } else if (Math.random() < SHIELD_DROP_RATE) {
+                            this.spawnItem(e.x, e.y, 'SHIELD_POTION');
                         } else if (Math.random() < FLASK_DROP_RATE) {
                             this.spawnItem(e.x, e.y, 'HP_FLASK');
                         }
@@ -797,6 +803,13 @@ class ServerGame {
                 const enemySize = e.width || ENEMY_SIZE;
                 if (!p.isDead && this.checkCollision(p, e, PLAYER_SIZE, enemySize)) {
                     const now = Date.now();
+
+                    // Check Shield
+                    if (p.shieldEndTime && now < p.shieldEndTime) {
+                        // Player is shielded - no damage
+                        continue;
+                    }
+
                     // Check cooldown
                     if (!p.lastDamageTime || now - p.lastDamageTime > 1000) {
                         p.hp -= 10;
@@ -894,12 +907,15 @@ class ServerGame {
                             pickedUp = true;
                         }
                     } else if (item.itemType === 'HEART') {
-                        // Only pick up if lives < 3 (MAX_PLAYERS lives? No, simply 3 max lives hardcoded for now or we should check if there's a constant)
-                        // Checking constructor: this.players[id].lives = 3;
+                        // Only pick up if lives < 3
                         if (p.lives < 3) {
                             p.lives++;
                             pickedUp = true;
                         }
+                    } else if (item.itemType === 'SHIELD_POTION') {
+                        // Activate shield
+                        p.shieldEndTime = Date.now() + SHIELD_DURATION;
+                        pickedUp = true;
                     }
 
                     if (pickedUp) {

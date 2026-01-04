@@ -124,6 +124,9 @@ export class Game {
                 if (newMe.hp > oldMe.hp) {
                     this.soundManager.play('pickup');
                 } else if (newMe.lives > oldMe.lives) {
+                } else if (newMe.lives > oldMe.lives) {
+                    this.soundManager.play('pickup');
+                } else if (newMe.shieldEndTime > oldMe.shieldEndTime) {
                     this.soundManager.play('pickup');
                 }
             }

@@ -461,3 +461,8 @@ html {
 .controls-hint strong {
     color: #ffd700;
 }
+/* Damage Flash Effect */
+.damage-flash {
+    filter: sepia(1) saturate(1000%) hue-rotate(-50deg) contrast(1.2);
+    transition: filter 0.1s;
+}

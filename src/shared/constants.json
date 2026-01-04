@@ -13,6 +13,8 @@
     "POINTS_PER_KILL": 10,
     "FLASK_DROP_RATE": 0.3,
     "HEART_DROP_RATE": 0.05,
+    "SHIELD_DROP_RATE": 0.1,
+    "SHIELD_DURATION": 5000,
     "ITEM_SIZE": 24,
     "WALL_TOP_BOT_HEIGHT": 49,
     "WALL_SIDE_WIDTH": 50,
@@ -36,6 +38,12 @@
             ],
             "HEART": [
                 "assets/custom/heart.png"
+            ],
+            "SHIELD_POTION": [
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_3_1.png",
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_3_2.png",
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_3_3.png",
+                "assets/2D Pixel Dungeon Asset Pack/items and trap_animation/flasks/flasks_3_4.png"
             ]
         },
         "PLAYER_IDLE": [

@@ -4,6 +4,13 @@ import { SoundManager } from './sound-manager.js';
 
 const soundManager = new SoundManager();
 
+// Global button click sound
+document.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        soundManager.play('menu');
+    }
+});
+
 console.log('Client initializing...');
 
 // Basic Socket.io connection
@@ -153,7 +160,7 @@ socket.on('lobbyState', (lobby) => {
     // Use currentPlayerId if available, otherwise fall back to socket.id
     const playerIdToCheck = currentPlayerId || socket.id;
     let currentPlayer = lobby.players.find(p => p.id === playerIdToCheck);
-    
+
     // If not found with currentPlayerId, try socket.id
     if (!currentPlayer) {
         currentPlayer = lobby.players.find(p => p.id === socket.id);
@@ -162,7 +169,7 @@ socket.on('lobbyState', (lobby) => {
             currentPlayerId = currentPlayer.id;
         }
     }
-    
+
     const isCurrentPlayerLead = currentPlayer ? currentPlayer.isLeadPlayer : false;
 
     // Update isLeadPlayer variable
