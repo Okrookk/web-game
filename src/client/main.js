@@ -39,7 +39,6 @@ const quitFromPauseBtn = document.getElementById('quit-from-pause-btn');
 const pauseMessage = document.getElementById('pause-message');
 let isLeadPlayer = false;
 let currentPlayerId = null;
-let pendingJoin = null; // Store join attempt if game is in progress
 
 // Audio Settings Controls
 const toggleMusicBtn = document.getElementById('toggle-music-btn');
@@ -102,9 +101,6 @@ joinBtn.addEventListener('click', () => {
 
         // Start background music
         soundManager.playMusic('general');
-
-        // Store join attempt in case we need to retry
-        pendingJoin = username;
     }
 });
 
@@ -136,10 +132,7 @@ socket.on('joinError', (error) => {
     if (error.code === 'GAME_IN_PROGRESS') {
         joinBtn.innerText = "Waiting for game to end...";
         joinBtn.disabled = true;
-        // Don't clear pendingJoin - we'll retry when game ends
     } else {
-        // For other errors, clear pending join and show alert
-        pendingJoin = null;
         alert(error.message || 'Failed to join game');
         // Focus back to input
         usernameInput.focus();
@@ -154,7 +147,6 @@ socket.on('lobbyState', (lobby) => {
     console.log('Lobby state:', lobby);
 
     const devMode = lobby.devMode || false;
-    const minPlayers = devMode ? 1 : 2;
     const maxPlayers = 4;
 
     // Find current player and check if they are lead player
@@ -277,19 +269,24 @@ resumeBtn.addEventListener('click', () => {
     pauseScreen.style.display = 'none';
 });
 
-quitBtn.addEventListener('click', () => {
+function handleQuit() {
     if (confirm('Are you sure you want to quit the game?')) {
         socket.emit('quitGame', {});
     }
-});
+}
 
-quitFromPauseBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to quit the game?')) {
-        socket.emit('quitGame', {});
-    }
-});
+quitBtn.addEventListener('click', handleQuit);
+quitFromPauseBtn.addEventListener('click', handleQuit);
 
 // Pause/Resume/Quit event listeners
+function updatePauseMessage(pausedBy) {
+    if (pausedBy) {
+        pauseMessage.textContent = `Game paused by ${pausedBy.username}`;
+    } else {
+        pauseMessage.textContent = 'Game is paused';
+    }
+}
+
 socket.on('gamePaused', (data) => {
     console.log('Game paused by:', data.pausedBy);
     pauseScreen.style.display = 'block';
@@ -298,11 +295,7 @@ socket.on('gamePaused', (data) => {
     if (countdownScreen) {
         countdownScreen.style.display = 'none';
     }
-    if (data.pausedBy) {
-        pauseMessage.textContent = `Game paused by ${data.pausedBy.username}`;
-    } else {
-        pauseMessage.textContent = 'Game is paused';
-    }
+    updatePauseMessage(data.pausedBy);
 });
 
 socket.on('gameResumed', (data) => {
@@ -351,7 +344,6 @@ socket.on('playerQuit', (data) => {
 socket.on('gameEnded', (data) => {
     console.log('Game ended:', data);
     soundManager.play('gameover');
-
 
     // Set a flag to prevent lobbyState from overwriting this screen
     window.gameEnded = true;
@@ -449,11 +441,7 @@ socket.on('gameState', (state) => {
     // Update pause screen visibility based on isPaused
     if (state.isPaused && hud.style.display !== 'none') {
         pauseScreen.style.display = 'block';
-        if (state.pausedBy) {
-            pauseMessage.textContent = `Game paused by ${state.pausedBy.username}`;
-        } else {
-            pauseMessage.textContent = 'Game is paused';
-        }
+        updatePauseMessage(state.pausedBy);
     } else if (!state.isPaused) {
         pauseScreen.style.display = 'none';
     }

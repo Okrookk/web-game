@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-// const { createViteServer } = require('./vite-dev-server');
 
 // Actually, effectively handling dev vs prod:
 // In dev, we run `vite` (frontend) and `nodemon server` (backend).
@@ -61,8 +60,7 @@ io.on('connection', (socket) => {
             // Send error to client
             const errorMessages = {
                 'NAME_TAKEN': 'Name is already taken! Please choose another name.',
-                'INVALID_NAME': 'Name must be between 3 and 20 characters.',
-                'GAME_IN_PROGRESS': 'Game is currently in progress. Please wait for the game to end.'
+                'INVALID_NAME': 'Name must be between 3 and 20 characters.'
             };
             
             socket.emit('joinError', {

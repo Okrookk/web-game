@@ -83,11 +83,9 @@ export class SoundManager {
             // For now, assuming 'general' is the main track to resume if enabled
             this.playMusic('general');
         }
-        return this.isMusicMuted;
     }
 
     toggleEffectsMute() {
         this.isEffectsMuted = !this.isEffectsMuted;
-        return this.isEffectsMuted;
     }
 }

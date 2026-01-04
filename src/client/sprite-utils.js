@@ -22,7 +22,6 @@ export function getSpriteStyle(spriteSheetPath, x, y, width, height, displayWidt
     const displayH = displayHeight || height;
     
     // background-size must be the sprite sheet size for background-position to work correctly
-    // If sprite sheet size is not provided, use 'auto' (doesn't work in all cases)
     let bgSize = 'auto';
     if (spriteSheetWidth && spriteSheetHeight) {
         bgSize = `${spriteSheetWidth}px ${spriteSheetHeight}px`;

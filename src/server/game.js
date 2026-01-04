@@ -37,7 +37,6 @@ class ServerGame {
         if (this.devMode) {
             console.log('DEV MODE ENABLED: Single player allowed');
         }
-        console.log(`FLASK_DROP_RATE: ${FLASK_DROP_RATE}`);
 
         // Game state
         this.state = GAME_STATE.WAITING;
@@ -54,7 +53,6 @@ class ServerGame {
         this.pauseStartTime = null; // When game was paused (to adjust timer)
         this.pausedTimeAccumulator = 0; // Total paused time
 
-        this.lastTime = Date.now();
         this.lastEnemySpawn = 0;
 
         // Entity ID counter
@@ -434,22 +432,8 @@ class ServerGame {
             username: player.username
         };
 
-        // Remove player
+        // Remove player (this also handles pause-resume if needed)
         this.removePlayer(playerId);
-
-        // If game was paused by this player, resume it
-        if (this.isPaused && this.pausedBy && this.pausedBy.id === playerId) {
-            const pausedDuration = Date.now() - this.pauseStartTime;
-            this.pausedTimeAccumulator += pausedDuration;
-
-            if (this.gameEndTime) {
-                this.gameEndTime += pausedDuration;
-            }
-
-            this.isPaused = false;
-            this.pausedBy = null;
-            this.pauseStartTime = null;
-        }
 
         // Broadcast quit event
         this.io.emit('playerQuit', {
@@ -571,7 +555,6 @@ class ServerGame {
         const now = Date.now();
         const deltaTime = now - (this.lastUpdateTime || now);
         this.lastUpdateTime = now;
-        this.lastTime = now;
 
         // Update individual survival timers for alive players
         if (this.state === GAME_STATE.PLAYING && !this.isPaused) {
@@ -846,9 +829,51 @@ class ServerGame {
             }
 
             if (target) {
+                // Separation logic: prevent enemies from merging
+                let sepX = 0;
+                let sepY = 0;
+                let separationCount = 0;
+                const separationRadius = ENEMY_SIZE * 1.5; // Trigger separation when close
+
+                for (const otherId in this.enemies) {
+                    if (id === otherId) continue;
+                    const other = this.enemies[otherId];
+                    const distX = e.x - other.x;
+                    const distY = e.y - other.y;
+                    const distance = Math.sqrt(distX * distX + distY * distY);
+
+                    if (distance < separationRadius && distance > 0) {
+                        // Push away from neighbor
+                        // Weight by inverse distance (closer = stronger push)
+                        const weight = 1 / distance;
+                        sepX += (distX / distance) * weight;
+                        sepY += (distY / distance) * weight;
+                        separationCount++;
+                    }
+                }
+
+                // Normal movement towards player
                 const angle = Math.atan2(target.y - e.y, target.x - e.x);
-                e.x += Math.cos(angle) * ENEMY_SPEED;
-                e.y += Math.sin(angle) * ENEMY_SPEED;
+                let moveX = Math.cos(angle) * ENEMY_SPEED;
+                let moveY = Math.sin(angle) * ENEMY_SPEED;
+
+                // Apply separation force if crowded
+                if (separationCount > 0) {
+                    // Normalize separation vector
+                    const sepLen = Math.sqrt(sepX * sepX + sepY * sepY);
+                    if (sepLen > 0) {
+                        sepX = (sepX / sepLen) * ENEMY_SPEED;
+                        sepY = (sepY / sepLen) * ENEMY_SPEED;
+                    }
+
+                    // Blend movement: 60% separation, 40% target tracking when crowded
+                    // This priority ensures they don't just collapse while chasing
+                    moveX = moveX * 0.4 + sepX * 0.6;
+                    moveY = moveY * 0.4 + sepY * 0.6;
+                }
+
+                e.x += moveX;
+                e.y += moveY;
             }
         }
 

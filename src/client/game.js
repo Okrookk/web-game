@@ -13,7 +13,6 @@ export class Game {
         };
 
         this.isRunning = false;
-        this.lastTime = 0;
 
         // Store event handlers so we can remove them later
         this.gameStateHandler = (state) => {
@@ -101,14 +100,6 @@ export class Game {
     loop(timestamp) {
         if (!this.isRunning) return;
 
-        // Calculate delta time if needed for client-side smoothing
-        // const dt = timestamp - this.lastTime;
-        this.lastTime = timestamp;
-
-        // Detect sound events by comparing previous state (already in this.gameState) handling
-        // We'll rely on the update handler to trigger sound checks actually, or do it here if we store prev state.
-        // Actually, best place is inside the gameStateHandler where we have both states.
-
         this.renderer.render(this.gameState, this.socket.id);
 
         requestAnimationFrame((t) => this.loop(t));
@@ -128,10 +119,7 @@ export class Game {
                 this.soundManager.play('death');
             }
 
-            // Check for Pickup (HP increase or Lives increase)
-            // Only play if ALIVE to avoid playing pickup sound when respawning/resetting if logic was different
-            // But actually player shouldn't gain HP while dead usually unless respawning.
-            // Check logic: if HP went UP and we were not dead and are not dead
+            // Check for Pickup (HP or Lives increase) - only if alive
             if (!oldMe.isDead && !newMe.isDead) {
                 if (newMe.hp > oldMe.hp) {
                     this.soundManager.play('pickup');
@@ -141,10 +129,7 @@ export class Game {
             }
         }
 
-        // Also check if any other player died? "death should be played when one of the players is dead"
-        // User request: "death should be played when one of the players is dead" -> ambiguous if only local or any.
-        // Assuming ANY player death for better feedback in a small multiplayer game.
-
+        // Check for other player deaths
         for (const [id, newEntity] of Object.entries(newState.entities)) {
             if (newEntity.type === 'player' && id !== myId) {
                 const oldEntity = oldState.entities[id];

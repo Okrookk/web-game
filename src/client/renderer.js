@@ -1,5 +1,5 @@
 import constants from '../shared/constants.json';
-import { applySpriteStyle, gridToSpriteCoords } from './sprite-utils.js';
+import { applySpriteStyle } from './sprite-utils.js';
 const { ASSETS, MAP_WIDTH, MAP_HEIGHT, PLAYER_SIZE } = constants;
 
 export class Renderer {
@@ -93,9 +93,26 @@ export class Renderer {
         this.timerDisplay = document.getElementById('timer');
 
         // FPS Logic
-        this.lastFrameTime = performance.now();
         this.frameCount = 0;
         this.lastFpsUpdate = 0;
+    }
+
+    createNameTag(element, username) {
+        if (element.querySelector('.name-tag')) return;
+        
+        const nameTag = document.createElement('div');
+        nameTag.classList.add('name-tag');
+        nameTag.innerText = username || 'Player';
+        nameTag.style.position = 'absolute';
+        nameTag.style.top = '-20px';
+        nameTag.style.left = '50%';
+        nameTag.style.transform = 'translateX(-50%)';
+        nameTag.style.color = 'white';
+        nameTag.style.fontSize = '12px';
+        nameTag.style.whiteSpace = 'nowrap';
+        nameTag.style.zIndex = '3';
+        nameTag.style.pointerEvents = 'none';
+        element.appendChild(nameTag);
     }
 
     createWalls() {
@@ -104,10 +121,8 @@ export class Renderer {
         const wallSidePath = '/assets/2D Pixel Dungeon Asset Pack/character and tileset/wallside.png';
 
         // Wall dimensions
-        const wallTopBotWidth = 466;
         const wallTopBotHeight = 49;
         const wallSideWidth = 50;
-        const wallSideHeight = 503;
 
         // Create top wall
         // Position it so it covers the wall area where players cannot move
@@ -288,46 +303,14 @@ export class Renderer {
                     el.style.backgroundRepeat = 'no-repeat';
                     el.style.backgroundColor = 'transparent';
                     el.innerHTML = ''; // Clear text emoji
-
-                    // Add back name tag if it was removed or if we need to restore it
-                    if (!el.querySelector('.name-tag')) {
-                        const nameTag = document.createElement('div');
-                        nameTag.classList.add('name-tag');
-                        nameTag.innerText = entity.username || 'Player';
-                        nameTag.style.position = 'absolute';
-                        nameTag.style.top = '-20px';
-                        nameTag.style.left = '50%';
-                        nameTag.style.transform = 'translateX(-50%)';
-                        nameTag.style.color = 'white';
-                        nameTag.style.fontSize = '12px';
-                        nameTag.style.whiteSpace = 'nowrap';
-                        nameTag.style.zIndex = '3'; // Above player element
-                        nameTag.style.pointerEvents = 'none'; // Don't block clicks
-                        el.appendChild(nameTag);
-                    }
+                    this.createNameTag(el, entity.username);
                 } else {
                     // Normal animation
                     const frameRate = 200;
                     const frameIndex = Math.floor(time / frameRate) % ASSETS.PLAYER_IDLE.length;
                     el.style.backgroundImage = `url("/${ASSETS.PLAYER_IDLE[frameIndex]}")`;
                     el.innerHTML = ''; // Clear skull if it was there
-
-                    // Add back name tag
-                    if (!el.querySelector('.name-tag')) {
-                        const nameTag = document.createElement('div');
-                        nameTag.classList.add('name-tag');
-                        nameTag.innerText = entity.username || 'Player';
-                        nameTag.style.position = 'absolute';
-                        nameTag.style.top = '-20px';
-                        nameTag.style.left = '50%';
-                        nameTag.style.transform = 'translateX(-50%)';
-                        nameTag.style.color = 'white';
-                        nameTag.style.fontSize = '12px';
-                        nameTag.style.whiteSpace = 'nowrap';
-                        nameTag.style.zIndex = '3'; // Above player element
-                        nameTag.style.pointerEvents = 'none'; // Don't block clicks
-                        el.appendChild(nameTag);
-                    }
+                    this.createNameTag(el, entity.username);
                 }
             } else if (entity.type === 'enemy') {
                 // Animate enemies
@@ -383,8 +366,6 @@ export class Renderer {
             const y = entity.y;
             const rot = entity.rotation || 0;
 
-            // For sprites that flip, we might want to check direction?
-            // For now, simple translation.
             el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}rad)`;
         }
 
