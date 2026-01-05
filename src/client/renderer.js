@@ -96,9 +96,9 @@ export class Renderer {
         this.frameCount = 0;
         this.lastFpsUpdate = 0;
 
-        this.preloadAssets();
-
         this.lastHp = new Map(); // id -> hp
+        this.preloadedImages = new Set(); // Keep references to prevent GC
+        this.preloadAssets();
     }
 
     preloadAssets() {
@@ -109,11 +109,13 @@ export class Renderer {
                     if (value.startsWith('assets/') || value.startsWith('/assets/')) {
                         const img = new Image();
                         img.src = value.startsWith('/') ? value : `/${value}`;
+                        this.preloadedImages.add(img);
                     }
                 } else if (Array.isArray(value)) {
                     value.forEach(path => {
                         const img = new Image();
                         img.src = path.startsWith('/') ? path : `/${path}`;
+                        this.preloadedImages.add(img);
                     });
                 } else if (typeof value === 'object') {
                     preload(value);
@@ -129,6 +131,7 @@ export class Renderer {
         extras.forEach(path => {
             const img = new Image();
             img.src = path;
+            this.preloadedImages.add(img);
         });
 
         preload(ASSETS);
