@@ -3,11 +3,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
-// Actually, effectively handling dev vs prod:
-// In dev, we run `vite` (frontend) and `nodemon server` (backend).
-// The `vite` dev server proxies /socket.io to this server.
-// This server just needs to listen.
-
 const { ServerGame } = require('./game');
 const { MAX_PLAYERS } = require('../shared/constants');
 
@@ -80,6 +75,19 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // In single-player mode, reject new players (unless it's the lead player rejoining)
+        if (game.singlePlayerMode) {
+            // Allow lead player to rejoin if they were the only player
+            const isLeadPlayerRejoining = game.leadPlayerId === null || game.getRealPlayerCount() === 0;
+            if (!isLeadPlayerRejoining) {
+                socket.emit('joinError', {
+                    code: 'SINGLE_PLAYER_MODE',
+                    message: 'Single-player mode is enabled. Only the host can play against NPCs.'
+                });
+                return;
+            }
+        }
+
         // Check if game is full
         if (game.getPlayerCount() >= MAX_PLAYERS) {
             socket.emit('joinError', {
@@ -103,6 +111,16 @@ io.on('connection', (socket) => {
 
     socket.on('startGame', () => {
         const result = game.startGame(socket.id);
+        if (!result.success) {
+            socket.emit('error', {
+                code: result.error,
+                message: getErrorMessage(result.error)
+            });
+        }
+    });
+
+    socket.on('setSinglePlayerMode', (data) => {
+        const result = game.setSinglePlayerMode(data.enabled, data.npcConfigs || []);
         if (!result.success) {
             socket.emit('error', {
                 code: result.error,
@@ -159,7 +177,8 @@ function getErrorMessage(code) {
         'INVALID_PLAYER_COUNT': devMode 
             ? `Need ${minPlayers}-4 players to start the game (DEV MODE: ${minPlayers} minimum)`
             : 'Need 2-4 players to start the game',
-        'GAME_NOT_READY': 'Game is not ready to start'
+        'GAME_NOT_READY': 'Game is not ready to start',
+        'PLAYERS_IN_LOBBY': 'Cannot enable single-player mode while other players are in the lobby'
     };
     return messages[code] || 'Unknown error';
 }

@@ -19,8 +19,6 @@ export class Game {
             // Detect events before updating state
             this.detectSoundEvents(this.gameState, state);
 
-            // In a real implementation, we would interpolate
-            // For now, simple state replacement or strict lockstep
             this.gameState = state;
         };
 
@@ -29,7 +27,6 @@ export class Game {
         // Listen for updates
         this.socket.on('gameState', this.gameStateHandler);
 
-        // Start local simulation/prediction loop if needed, for now just render loop
         this.startGameLoop();
     }
 

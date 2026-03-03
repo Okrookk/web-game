@@ -25,6 +25,8 @@ const {
     ITEM_SIZE
 } = require('../shared/constants');
 
+const { NPC, STRATEGY_TYPES } = require('./npc');
+
 class ServerGame {
     constructor(io) {
         this.io = io;
@@ -39,6 +41,11 @@ class ServerGame {
         if (this.devMode) {
             console.log('DEV MODE ENABLED: Single player allowed');
         }
+
+        // Single-player mode
+        this.singlePlayerMode = false;
+        this.npcs = {}; // npcId -> NPC instance
+        this.npcConfigs = []; // Array of NPC configurations
 
         // Game state
         this.state = GAME_STATE.WAITING;
@@ -75,12 +82,23 @@ class ServerGame {
         return Object.keys(this.players).length;
     }
 
+    getRealPlayerCount() {
+        // Count only real players, not NPCs
+        return Object.keys(this.players).filter(id => !id.startsWith('npc_')).length;
+    }
+
     getState() {
         return this.state;
     }
 
     playerAmountCheck() {
         const count = this.getPlayerCount();
+        // In single-player mode, require 1 real player + 1-3 NPCs
+        if (this.singlePlayerMode) {
+            const realPlayerCount = Object.keys(this.players).filter(id => !id.startsWith('npc_')).length;
+            const npcCount = Object.keys(this.npcs).length;
+            return realPlayerCount === 1 && npcCount >= 1 && npcCount <= 3 && count >= 2 && count <= 4;
+        }
         // In dev mode, allow 1 player. Otherwise require 2-4 players.
         if (this.devMode) {
             return count >= 1 && count <= MAX_PLAYERS;
@@ -128,19 +146,27 @@ class ServerGame {
         this.io.emit('lobbyState', {
             state: this.state,
             players: players,
-            devMode: this.devMode // Send dev mode status to clients
+            devMode: this.devMode,
+            singlePlayerMode: this.singlePlayerMode,
+            npcConfigCount: this.singlePlayerMode ? this.npcConfigs.length : 0
         });
     }
 
     addPlayer(id, username) {
+        // In single-player mode, reject new players (except NPCs)
+        if (this.singlePlayerMode && !id.startsWith('npc_')) {
+            // Don't throw error, just silently reject (this is called from server.js which handles errors)
+            return;
+        }
+
         // If game is in GAME_OVER state and no players, return to WAITING
         if (this.state === GAME_STATE.GAME_OVER && this.getPlayerCount() === 0) {
             this.setState(GAME_STATE.WAITING);
             this.leadPlayerId = null;
         }
 
-        // Set first player as lead player
-        if (this.leadPlayerId === null) {
+        // Set first player as lead player (only real players, not NPCs)
+        if (this.leadPlayerId === null && !id.startsWith('npc_')) {
             this.leadPlayerId = id;
         }
 
@@ -175,8 +201,10 @@ class ServerGame {
             this.broadcastLobbyState();
         }
 
-        // Notify others
-        this.io.emit('playerJoined', { id, username });
+        // Notify others (only for real players, not NPCs)
+        if (!id.startsWith('npc_')) {
+            this.io.emit('playerJoined', { id, username });
+        }
     }
 
     removePlayer(id) {
@@ -209,6 +237,37 @@ class ServerGame {
                 this.leadPlayerId = remainingPlayers.length > 0 ? remainingPlayers[0] : null;
             }
 
+            // In single-player mode, if the only real player leaves, end the game immediately
+            if (this.singlePlayerMode && !id.startsWith('npc_')) {
+                const realPlayerCount = this.getRealPlayerCount();
+                if (realPlayerCount === 0) {
+                    // Last real player left, end game and remove all NPCs
+                    if (this.state === GAME_STATE.PLAYING || this.state === GAME_STATE.COUNTDOWN) {
+                        // Remove all NPCs
+                        for (const npcId in this.npcs) {
+                            if (this.players[npcId]) {
+                                delete this.players[npcId];
+                            }
+                        }
+                        this.npcs = {};
+                        
+                        // End the game
+                        if (this.state === GAME_STATE.PLAYING) {
+                            this.endGame();
+                        } else {
+                            this.setState(GAME_STATE.WAITING);
+                            this.countdownStartTime = null;
+                        }
+                    }
+                    // Disable single-player mode when last player leaves
+                    this.singlePlayerMode = false;
+                    this.npcConfigs = [];
+                    this.leadPlayerId = null;
+                    this.broadcastLobbyState();
+                    return;
+                }
+            }
+
             // If no players left, return to waiting state so new players can join
             if (this.getPlayerCount() === 0) {
                 // Reset game state if in COUNTDOWN or PLAYING
@@ -225,8 +284,16 @@ class ServerGame {
             } else {
                 // If game is playing or in countdown and less than minimum players, end game and return to waiting
                 // In dev mode, minimum is 1, otherwise it's MIN_PLAYERS (2)
-                const minPlayersForGame = this.devMode ? 1 : MIN_PLAYERS;
-                if ((this.state === GAME_STATE.PLAYING || this.state === GAME_STATE.COUNTDOWN) && this.getPlayerCount() < minPlayersForGame) {
+                // In single-player mode, minimum is 1 real player
+                const minPlayersForGame = this.singlePlayerMode 
+                    ? 1  // Need at least 1 real player
+                    : (this.devMode ? 1 : MIN_PLAYERS);
+                
+                const playerCountToCheck = this.singlePlayerMode 
+                    ? this.getRealPlayerCount()  // Check real players in single-player mode
+                    : this.getPlayerCount();     // Check all players in multiplayer mode
+                
+                if ((this.state === GAME_STATE.PLAYING || this.state === GAME_STATE.COUNTDOWN) && playerCountToCheck < minPlayersForGame) {
                     // If in countdown, just reset to waiting
                     if (this.state === GAME_STATE.COUNTDOWN) {
                         this.setState(GAME_STATE.WAITING);
@@ -243,11 +310,99 @@ class ServerGame {
                     // Broadcast lobby state after state change
                     this.broadcastLobbyState();
                 } else {
-                    // Notify others
-                    this.io.emit('playerLeft', { id, username: player.username });
+                    // Notify others (only for real players, not NPCs)
+                    if (!id.startsWith('npc_')) {
+                        this.io.emit('playerLeft', { id, username: player.username });
+                    }
                     this.broadcastLobbyState();
                 }
             }
+        }
+    }
+
+    setSinglePlayerMode(enabled, npcConfigs = []) {
+        // Only lead player can toggle single-player mode
+        if (this.state === GAME_STATE.PLAYING || this.state === GAME_STATE.COUNTDOWN) {
+            return { success: false, error: 'GAME_IN_PROGRESS' };
+        }
+
+        // If enabling single-player mode, remove all non-lead players
+        if (enabled && this.getRealPlayerCount() > 1) {
+            // Remove all players except lead player
+            const playersToRemove = [];
+            for (const id in this.players) {
+                if (!id.startsWith('npc_') && id !== this.leadPlayerId) {
+                    playersToRemove.push(id);
+                }
+            }
+            // Remove players and notify them
+            for (const id of playersToRemove) {
+                const player = this.players[id];
+                if (player) {
+                    // Notify player they were removed
+                    const socket = this.io.sockets.sockets.get(id);
+                    if (socket) {
+                        socket.emit('kickedFromGame', {
+                            reason: 'SINGLE_PLAYER_MODE',
+                            message: 'You were removed because the host enabled single-player mode.'
+                        });
+                    }
+                }
+                this.removePlayer(id);
+            }
+        }
+
+        this.singlePlayerMode = enabled;
+        this.npcConfigs = npcConfigs;
+        
+        console.log('Single-player mode updated:', {
+            enabled: enabled,
+            npcConfigCount: npcConfigs.length,
+            configs: npcConfigs.map(c => ({
+                username: c.username,
+                difficulty: c.difficulty
+            }))
+        });
+
+        // If disabling, remove all NPCs
+        if (!enabled) {
+            for (const npcId in this.npcs) {
+                this.removePlayer(npcId);
+            }
+            this.npcs = {};
+        }
+        // NPCs will be created when game starts, not in lobby
+
+        this.broadcastLobbyState();
+        return { success: true };
+    }
+
+    createNPCs() {
+        // Clear existing NPCs
+        for (const npcId in this.npcs) {
+            this.removePlayer(npcId);
+        }
+        this.npcs = {};
+
+        // Create NPCs based on configs
+        for (let i = 0; i < this.npcConfigs.length; i++) {
+            const config = this.npcConfigs[i];
+            const npcId = `npc_${this.generateId()}`;
+            const username = config.username || `NPC ${i + 1}`;
+            const difficulty = config.difficulty || 'MEDIUM';
+            const customConfig = config.customConfig || {};
+
+            console.log(`Creating NPC ${i + 1}:`, {
+                username,
+                difficulty,
+                customConfig
+            });
+
+            const npc = new NPC(npcId, username, difficulty, customConfig);
+            this.npcs[npcId] = npc;
+
+            // Add NPC as player
+            this.addPlayer(npcId, username);
         }
     }
 
@@ -255,6 +410,12 @@ class ServerGame {
         // Check if requester is lead player
         if (leadPlayerId !== this.leadPlayerId) {
             return { success: false, error: 'NOT_LEAD_PLAYER' };
+        }
+
+        // In single-player mode, create NPCs (players already removed when mode was enabled)
+        if (this.singlePlayerMode) {
+            // Create NPCs
+            this.createNPCs();
         }
 
         // Check player count
@@ -352,6 +513,11 @@ class ServerGame {
     }
 
     pauseGame(playerId) {
+        // NPCs cannot pause
+        if (playerId.startsWith('npc_')) {
+            return { success: false, error: 'NPC_CANNOT_PAUSE' };
+        }
+
         // Check if player exists
         const player = this.players[playerId];
         if (!player) {
@@ -386,6 +552,11 @@ class ServerGame {
     }
 
     resumeGame(playerId) {
+        // NPCs cannot resume
+        if (playerId.startsWith('npc_')) {
+            return { success: false, error: 'NPC_CANNOT_RESUME' };
+        }
+
         // Check if player exists
         const player = this.players[playerId];
         if (!player) {
@@ -425,6 +596,11 @@ class ServerGame {
     }
 
     quitGame(playerId) {
+        // NPCs cannot quit
+        if (playerId.startsWith('npc_')) {
+            return { success: false, error: 'NPC_CANNOT_QUIT' };
+        }
+
         // Check if player exists
         const player = this.players[playerId];
         if (!player) {
@@ -482,9 +658,6 @@ class ServerGame {
         const subtypes = ['SKELETON1', 'SKELETON2', 'VAMPIRE'];
         const subtype = subtypes[Math.floor(Math.random() * subtypes.length)];
 
-        // Determine size based on subtype
-        // Player is 32. We want enemies same size or bigger.
-        // Let's make Skeletons 48 (1.5x player) and Vampire 64 (2x player).
         let size = 48;
         let hp = 1;
 
@@ -495,8 +668,6 @@ class ServerGame {
             hp = 2; // Slightly tougher skeleton
         }
 
-        // Adjust position to account for enemy size (center enemy on spawn point)
-        // For edge spawning, we want enemy to spawn just outside the wall
         let adjustedX = x;
         let adjustedY = y;
 
@@ -620,6 +791,18 @@ class ServerGame {
             this.lastEnemySpawn = now;
         }
 
+        // Update NPCs (generate AI input)
+        for (const npcId in this.npcs) {
+            const npc = this.npcs[npcId];
+            const npcPlayer = this.players[npcId];
+            if (npcPlayer && !npcPlayer.isDead && this.state === GAME_STATE.PLAYING) {
+                // Generate AI input
+                const aiInput = npc.generateInput(npcPlayer, this.players, this.enemies, this.items, now);
+                // Apply input to player
+                this.handleInput(npcId, { keys: aiInput });
+            }
+        }
+
         // Update Players
         const playerIds = Object.keys(this.players);
         for (const id of playerIds) {
@@ -636,25 +819,32 @@ class ServerGame {
             }
 
             // Movement - track direction based on keys pressed
+            // Get speed multiplier for NPCs, or use default for real players
+            let speedMultiplier = 1.0;
+            if (id.startsWith('npc_') && this.npcs[id]) {
+                speedMultiplier = this.npcs[id].speedMultiplier || 1.0;
+            }
+            const currentSpeed = PLAYER_SPEED * speedMultiplier;
+            
             let dx = 0;
             let dy = 0;
             let newX = p.x;
             let newY = p.y;
 
             if (p.keys['ArrowUp'] || p.keys['KeyW']) {
-                newY -= PLAYER_SPEED;
+                newY -= currentSpeed;
                 dy = -1;
             }
             if (p.keys['ArrowDown'] || p.keys['KeyS']) {
-                newY += PLAYER_SPEED;
+                newY += currentSpeed;
                 dy = 1;
             }
             if (p.keys['ArrowLeft'] || p.keys['KeyA']) {
-                newX -= PLAYER_SPEED;
+                newX -= currentSpeed;
                 dx = -1;
             }
             if (p.keys['ArrowRight'] || p.keys['KeyD']) {
-                newX += PLAYER_SPEED;
+                newX += currentSpeed;
                 dx = 1;
             }
 
@@ -699,8 +889,16 @@ class ServerGame {
                 p.spaceHeld = false;
             }
 
+            // Get fire rate multiplier for NPCs, or use default for real players
+            let fireRateMultiplier = 1.0;
+            if (id.startsWith('npc_') && this.npcs[id]) {
+                fireRateMultiplier = this.npcs[id].fireRateMultiplier || 1.0;
+            }
+            // Higher fireRateMultiplier = faster shooting (divide instead of multiply)
+            const adjustedFireRate = FIRE_RATE / fireRateMultiplier;
+
             // Only fire if space is pressed AND not held AND cooldown is ready
-            if (isSpacePressed && !p.spaceHeld && now - p.lastFired > FIRE_RATE) {
+            if (isSpacePressed && !p.spaceHeld && now - p.lastFired > adjustedFireRate) {
                 // Mark space as held immediately so we don't fire again until release
                 p.spaceHeld = true;
 

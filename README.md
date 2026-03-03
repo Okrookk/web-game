@@ -7,6 +7,7 @@ Built using purely **DOM (Document Object Model) elements** for rendering, provi
 ## 🕹️ Game Mechanics
 
 - **Multiplayer Mayhem**: Support for 2-4 players in real-time.
+- **Single-Player Mode**: Play solo with AI-controlled NPC teammates! Add 1-3 NPCs with customizable difficulty levels (Easy, Medium, Hard). NPCs fight enemies and collect items just like real players.
 - **Rules & Objective**:
 - **Duration**: The game lasts exactly **2 minutes**.
 - **Winning**: The player with the **most kills** wins.

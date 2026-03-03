@@ -44,8 +44,15 @@ const resumeBtn = document.getElementById('resume-btn');
 const quitBtn = document.getElementById('quit-btn');
 const quitFromPauseBtn = document.getElementById('quit-from-pause-btn');
 const pauseMessage = document.getElementById('pause-message');
+const singlePlayerSection = document.getElementById('single-player-section');
+const singlePlayerToggle = document.getElementById('single-player-toggle');
+const npcConfig = document.getElementById('npc-config');
+const npcCountSelect = document.getElementById('npc-count-select');
+const npcList = document.getElementById('npc-list');
 let isLeadPlayer = false;
 let currentPlayerId = null;
+let singlePlayerMode = false;
+let npcConfigs = [];
 
 // Audio Settings Controls
 const toggleMusicBtn = document.getElementById('toggle-music-btn');
@@ -155,6 +162,7 @@ socket.on('lobbyState', (lobby) => {
 
     const devMode = lobby.devMode || false;
     const maxPlayers = 4;
+    singlePlayerMode = lobby.singlePlayerMode || false;
 
     // Find current player and check if they are lead player
     // Use currentPlayerId if available, otherwise fall back to socket.id
@@ -177,6 +185,19 @@ socket.on('lobbyState', (lobby) => {
         isLeadPlayer = isCurrentPlayerLead;
     }
 
+    // Show/hide single-player section based on lead player status
+    if (singlePlayerSection) {
+        singlePlayerSection.style.display = isCurrentPlayerLead ? 'block' : 'none';
+    }
+
+    // Update single-player toggle state (only if visible)
+    if (singlePlayerToggle && isCurrentPlayerLead) {
+        singlePlayerToggle.checked = singlePlayerMode;
+        if (npcConfig) {
+            npcConfig.style.display = singlePlayerMode ? 'block' : 'none';
+        }
+    }
+
     // Update player list
     playerList.innerHTML = '';
     lobby.players.forEach(player => {
@@ -189,13 +210,38 @@ socket.on('lobbyState', (lobby) => {
         }
         playerList.appendChild(playerItem);
     });
+    
+    // In single-player mode, show NPC count from config
+    if (singlePlayerMode && lobby.npcConfigCount > 0) {
+        for (let i = 0; i < lobby.npcConfigCount; i++) {
+            const npcItem = document.createElement('div');
+            npcItem.className = 'player-item';
+            npcItem.textContent = `NPC ${i + 1} [NPC]`;
+            npcItem.style.color = '#bcaaa4';
+            npcItem.style.fontStyle = 'italic';
+            playerList.appendChild(npcItem);
+        }
+    }
 
-    // Update player count
-    playerCount.textContent = lobby.players.length;
+    // Update player count (include NPCs in single-player mode)
+    const totalCount = singlePlayerMode && lobby.npcConfigCount > 0 
+        ? lobby.players.length + lobby.npcConfigCount 
+        : lobby.players.length;
+    playerCount.textContent = totalCount;
 
     // Update waiting message based on game state
     if (lobby.state === 'GAME_OVER') {
         waitingMessage.textContent = 'Game ended. Waiting for players to join...';
+    } else if (singlePlayerMode) {
+        const realPlayerCount = lobby.players.length;
+        const npcCount = lobby.npcConfigCount || 0;
+        if (realPlayerCount === 0) {
+            waitingMessage.textContent = 'Waiting for host to join...';
+        } else if (npcCount === 0) {
+            waitingMessage.textContent = 'Configure NPCs and start game';
+        } else {
+            waitingMessage.textContent = `Ready! (1 player + ${npcCount} NPCs)`;
+        }
     } else if (devMode) {
         // Dev mode: allow single player
         if (lobby.players.length < 1) {
@@ -217,9 +263,17 @@ socket.on('lobbyState', (lobby) => {
     }
 
     // Show start button for lead player when enough players and in WAITING state
-    const hasEnoughPlayers = devMode
-        ? lobby.players.length >= 1 && lobby.players.length <= maxPlayers
-        : lobby.players.length >= 2 && lobby.players.length <= maxPlayers;
+    let hasEnoughPlayers;
+    if (singlePlayerMode) {
+        const realPlayerCount = lobby.players.length;
+        const npcCount = lobby.npcConfigCount || npcConfigs.length || 0;
+        // In single-player mode, need 1 real player and 1-3 NPCs configured
+        hasEnoughPlayers = realPlayerCount === 1 && npcCount >= 1 && npcCount <= 3;
+    } else {
+        hasEnoughPlayers = devMode
+            ? lobby.players.length >= 1 && lobby.players.length <= maxPlayers
+            : lobby.players.length >= 2 && lobby.players.length <= maxPlayers;
+    }
 
     console.log('Start button check:', {
         isCurrentPlayerLead,
@@ -227,7 +281,8 @@ socket.on('lobbyState', (lobby) => {
         state: lobby.state,
         hasEnoughPlayers,
         playerCount: lobby.players.length,
-        devMode
+        devMode,
+        singlePlayerMode
     });
 
     // Allow starting game in WAITING or GAME_OVER state (GAME_OVER means we can start a new game)
@@ -235,6 +290,11 @@ socket.on('lobbyState', (lobby) => {
         startGameBtn.style.display = 'block';
     } else {
         startGameBtn.style.display = 'none';
+    }
+
+    // Update NPC config UI if single-player mode
+    if (singlePlayerMode && isCurrentPlayerLead) {
+        updateNPCConfigUI();
     }
 });
 
@@ -258,6 +318,166 @@ socket.on('gameStarted', () => {
 socket.on('connect', () => {
     console.log('Connected to server with ID:', socket.id);
 });
+
+// Single-player mode toggle
+if (singlePlayerToggle) {
+    singlePlayerToggle.addEventListener('change', (e) => {
+        const enabled = e.target.checked;
+        if (enabled) {
+            // Initialize NPC configs
+            const npcCount = parseInt(npcCountSelect.value) || 3;
+            npcConfigs = [];
+            for (let i = 0; i < npcCount; i++) {
+                npcConfigs.push({
+                    username: `NPC ${i + 1}`,
+                    difficulty: 'MEDIUM',
+                    customConfig: {}
+                });
+            }
+            updateNPCConfigUI();
+        }
+        socket.emit('setSinglePlayerMode', {
+            enabled: enabled,
+            npcConfigs: npcConfigs
+        });
+    });
+}
+
+// NPC count selector
+if (npcCountSelect) {
+    npcCountSelect.addEventListener('change', (e) => {
+        const count = parseInt(e.target.value);
+        // Adjust npcConfigs array
+        while (npcConfigs.length < count) {
+            npcConfigs.push({
+                username: `NPC ${npcConfigs.length + 1}`,
+                difficulty: 'MEDIUM',
+                customConfig: {}
+            });
+        }
+        while (npcConfigs.length > count) {
+            npcConfigs.pop();
+        }
+        updateNPCConfigUI();
+        // Immediately update server with new NPC count
+        updateNPCConfigs();
+    });
+}
+
+// Update NPC configuration UI
+function updateNPCConfigUI() {
+    if (!npcList) return;
+    
+    npcList.innerHTML = '';
+    
+    npcConfigs.forEach((config, index) => {
+        const npcDiv = document.createElement('div');
+        npcDiv.style.marginBottom = '15px';
+        npcDiv.style.padding = '10px';
+        npcDiv.style.background = 'rgba(0,0,0,0.3)';
+        npcDiv.style.borderRadius = '4px';
+        npcDiv.style.border = '1px solid #5d4037';
+        
+        const customConfig = config.customConfig || {};
+        const speedMultiplier = customConfig.speedMultiplier !== undefined ? customConfig.speedMultiplier : 1.0;
+        const fireRateMultiplier = customConfig.fireRateMultiplier !== undefined ? customConfig.fireRateMultiplier : 1.0;
+        const bulletRange = customConfig.bulletRange !== undefined ? customConfig.bulletRange : 500;
+        
+        npcDiv.innerHTML = `
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">NPC ${index + 1}:</label>
+                <input type="text" class="npc-username" value="${config.username}" placeholder="NPC Name" style="padding: 5px; font-size: 1rem; font-family: 'MedievalSharp', cursive; background: #d7ccc8; color: #3e2723; border: 2px solid #5d4037; border-radius: 4px; width: 100%; margin-bottom: 5px;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label style="display: block; margin-bottom: 5px;">Difficulty:</label>
+                <select class="npc-difficulty" style="padding: 5px; font-size: 1rem; font-family: 'MedievalSharp', cursive; background: #d7ccc8; color: #3e2723; border: 2px solid #5d4037; border-radius: 4px; width: 100%;">
+                    <option value="EASY" ${config.difficulty === 'EASY' ? 'selected' : ''}>Easy</option>
+                    <option value="MEDIUM" ${config.difficulty === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+                    <option value="HARD" ${config.difficulty === 'HARD' ? 'selected' : ''}>Hard</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label style="display: block; margin-bottom: 5px;">Speed Multiplier: <span class="npc-speed-value">${speedMultiplier.toFixed(1)}</span></label>
+                <input type="range" class="npc-speed" min="0.1" max="2.0" step="0.1" value="${speedMultiplier}" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label style="display: block; margin-bottom: 5px;">Fire Rate Multiplier: <span class="npc-fire-rate-value">${fireRateMultiplier.toFixed(1)}</span></label>
+                <input type="range" class="npc-fire-rate" min="0.1" max="5.0" step="0.1" value="${fireRateMultiplier}" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label style="display: block; margin-bottom: 5px;">Bullet Range: <span class="npc-bullet-range-value">${bulletRange}</span></label>
+                <input type="range" class="npc-bullet-range" min="200" max="800" step="50" value="${bulletRange}" style="width: 100%;">
+            </div>
+        `;
+        
+        // Add event listeners
+        const usernameInput = npcDiv.querySelector('.npc-username');
+        const difficultySelect = npcDiv.querySelector('.npc-difficulty');
+        const speedSlider = npcDiv.querySelector('.npc-speed');
+        const speedValue = npcDiv.querySelector('.npc-speed-value');
+        const fireRateSlider = npcDiv.querySelector('.npc-fire-rate');
+        const fireRateValue = npcDiv.querySelector('.npc-fire-rate-value');
+        const bulletRangeSlider = npcDiv.querySelector('.npc-bullet-range');
+        const bulletRangeValue = npcDiv.querySelector('.npc-bullet-range-value');
+        
+        if (!config.customConfig) {
+            config.customConfig = {};
+        }
+        
+        usernameInput.addEventListener('input', (e) => {
+            config.username = e.target.value || `NPC ${index + 1}`;
+            updateNPCConfigs();
+        });
+        
+        difficultySelect.addEventListener('change', (e) => {
+            config.difficulty = e.target.value;
+            updateNPCConfigs();
+        });
+        
+        speedSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            speedValue.textContent = value.toFixed(1);
+            config.customConfig.speedMultiplier = value;
+            updateNPCConfigs();
+        });
+        
+        fireRateSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            fireRateValue.textContent = value.toFixed(1);
+            config.customConfig.fireRateMultiplier = value;
+            updateNPCConfigs();
+        });
+        
+        bulletRangeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            bulletRangeValue.textContent = value;
+            config.customConfig.bulletRange = value;
+            updateNPCConfigs();
+        });
+        
+        npcList.appendChild(npcDiv);
+    });
+}
+
+let npcConfigUpdateTimeout = null;
+function updateNPCConfigs() {
+    // Debounce updates to avoid too many server calls
+    if (npcConfigUpdateTimeout) {
+        clearTimeout(npcConfigUpdateTimeout);
+    }
+    
+    npcConfigUpdateTimeout = setTimeout(() => {
+        // Always send update if single-player mode is enabled (check from toggle state)
+        const isSinglePlayerEnabled = singlePlayerToggle && singlePlayerToggle.checked;
+        if (isSinglePlayerEnabled && isLeadPlayer) {
+            console.log('Updating NPC configs:', npcConfigs);
+            socket.emit('setSinglePlayerMode', {
+                enabled: true,
+                npcConfigs: npcConfigs
+            });
+        }
+    }, 300); // Wait 300ms after last change before sending
+}
 
 // Start game button handler
 startGameBtn.addEventListener('click', () => {
@@ -346,6 +566,41 @@ socket.on('playerQuit', (data) => {
         isLeadPlayer = false;
         currentPlayerId = null;
     }
+});
+
+socket.on('kickedFromGame', (data) => {
+    console.log('Kicked from game:', data);
+    
+    // Stop and cleanup game instance
+    if (gameInstance) {
+        gameInstance.cleanup();
+        gameInstance = null;
+    }
+
+    // Hide all screens
+    const countdownScreen = document.getElementById('countdown-screen');
+    if (countdownScreen) {
+        countdownScreen.style.display = 'none';
+    }
+    hud.style.display = 'none';
+    pauseScreen.style.display = 'none';
+    lobbyScreen.style.display = 'none';
+    joinScreen.style.display = 'block';
+
+    // Reset start button
+    startGameBtn.disabled = false;
+    startGameBtn.textContent = 'Join Game';
+
+    // Reset username input for rejoining
+    usernameInput.value = '';
+    usernameInput.focus();
+
+    // Reset player state
+    isLeadPlayer = false;
+    currentPlayerId = null;
+
+    // Show message to user
+    alert(data.message || 'You were removed from the game.');
 });
 
 socket.on('gameEnded', (data) => {

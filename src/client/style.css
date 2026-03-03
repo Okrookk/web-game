@@ -461,6 +461,67 @@ html {
 .controls-hint strong {
     color: #ffd700;
 }
+
+/* Single-player mode styles */
+#single-player-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 2px solid #5d4037;
+}
+
+#single-player-section label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+#single-player-section input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+#npc-config {
+    margin-top: 15px;
+}
+
+#npc-config select,
+#npc-config input[type="text"],
+#npc-config input[type="range"] {
+    font-family: 'MedievalSharp', cursive;
+}
+
+#npc-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#npc-list > div {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    border: 1px solid #5d4037;
+}
+
+#npc-list input[type="range"] {
+    width: 100%;
+    margin-top: 5px;
+}
+
+#npc-list .npc-speed-value,
+#npc-list .npc-success-value {
+    display: inline-block;
+    margin-left: 5px;
+    color: #ffd700;
+    font-weight: bold;
+}
+
 /* Damage Flash Effect */
 .damage-flash {
     filter: sepia(1) saturate(1000%) hue-rotate(-50deg) contrast(1.2);

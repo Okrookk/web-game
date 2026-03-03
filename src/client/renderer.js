@@ -15,13 +15,6 @@ export class Renderer {
         this.world.style.height = `${MAP_HEIGHT}px`;
         this.container.appendChild(this.world);
 
-        // Create background using sprite from sprite sheet
-        // Sprite: 63x47, coordinates (97, 0), sprite sheet: 160x160
-        // 
-        // Problem: background-repeat repeats the entire sprite sheet, not just the sprite.
-        // Solution: Create background using multiple small div elements,
-        // each displaying one sprite using applySpriteStyle.
-
         const spritePath = '/assets/2D Pixel Dungeon Asset Pack/character and tileset/Dungeon_Tileset.png';
         const spriteSheetWidth = 160;
         const spriteSheetHeight = 160;
@@ -30,9 +23,7 @@ export class Renderer {
         const spriteX = 97;
         const spriteY = 0;
 
-        // Create wrapper element for background
-        // Background should end at the same height as side walls (MAP_HEIGHT - PLAYER_SIZE)
-        // to match where bottom wall starts
+        // Create background
         const backgroundHeight = MAP_HEIGHT - PLAYER_SIZE;
         this.backgroundElement = document.createElement('div');
         this.backgroundElement.style.position = 'absolute';
@@ -97,6 +88,7 @@ export class Renderer {
         this.lastFpsUpdate = 0;
 
         this.lastHp = new Map(); // id -> hp
+        this.lastLivesCount = null; // Track lives count to avoid unnecessary updates
         this.preloadedImages = new Set(); // Keep references to prevent GC
         this.preloadAssets();
     }
@@ -515,40 +507,47 @@ export class Renderer {
                 }
             }
 
-            // Update Lives Display
+            // Update Lives Display - only rebuild when lives count changes
             if (this.livesDisplay) {
-                // Clear existing content
-                this.livesDisplay.innerHTML = '';
-
-                // Create "Lives: " text node
-                const livesLabel = document.createTextNode('Lives: ');
-                this.livesDisplay.appendChild(livesLabel);
-
-                // Add heart icons
                 const lives = myPlayer.lives || 0;
-                if (lives > 0) {
-                    for (let i = 0; i < lives; i++) {
-                        const heartImg = document.createElement('img');
-                        heartImg.src = '/assets/custom/heart.png';
-                        heartImg.alt = 'Heart';
-                        heartImg.style.width = '24px';
-                        heartImg.style.height = '24px';
-                        heartImg.style.verticalAlign = 'middle';
-                        heartImg.style.marginRight = '2px';
-                        heartImg.style.imageRendering = 'pixelated';
-                        heartImg.style.display = 'inline-block';
-                        this.livesDisplay.appendChild(heartImg);
+
+                // Only update if lives count has changed
+                if (lives !== this.lastLivesCount) {
+                    // Clear existing content
+                    this.livesDisplay.innerHTML = '';
+
+                    // Create "Lives: " text node
+                    const livesLabel = document.createTextNode('Lives: ');
+                    this.livesDisplay.appendChild(livesLabel);
+
+                    // Add heart icons
+                    if (lives > 0) {
+                        for (let i = 0; i < lives; i++) {
+                            const heartImg = document.createElement('img');
+                            heartImg.src = '/assets/custom/heart.png';
+                            heartImg.alt = 'Heart';
+                            heartImg.style.width = '24px';
+                            heartImg.style.height = '24px';
+                            heartImg.style.verticalAlign = 'middle';
+                            heartImg.style.marginRight = '2px';
+                            heartImg.style.imageRendering = 'pixelated';
+                            heartImg.style.display = 'inline-block';
+                            this.livesDisplay.appendChild(heartImg);
+                        }
+                    } else {
+                        const skullImg = document.createElement('img');
+                        skullImg.src = '/assets/custom/skull.png';
+                        skullImg.alt = 'Skull';
+                        skullImg.style.width = '24px';
+                        skullImg.style.height = '24px';
+                        skullImg.style.verticalAlign = 'middle';
+                        skullImg.style.imageRendering = 'pixelated';
+                        skullImg.style.display = 'inline-block';
+                        this.livesDisplay.appendChild(skullImg);
                     }
-                } else {
-                    const skullImg = document.createElement('img');
-                    skullImg.src = '/assets/custom/skull.png';
-                    skullImg.alt = 'Skull';
-                    skullImg.style.width = '24px';
-                    skullImg.style.height = '24px';
-                    skullImg.style.verticalAlign = 'middle';
-                    skullImg.style.imageRendering = 'pixelated';
-                    skullImg.style.display = 'inline-block';
-                    this.livesDisplay.appendChild(skullImg);
+
+                    // Update the last known lives count
+                    this.lastLivesCount = lives;
                 }
             }
 

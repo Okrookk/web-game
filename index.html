@@ -25,6 +25,23 @@
             <div id="lobby-info">
                 <p>Players: <span id="player-count">0</span>/4</p>
                 <p id="waiting-message">Waiting for more players to join...</p>
+                <div id="single-player-section" style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 2px solid #5d4037;">
+                    <label style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-size: 1.1rem;">
+                        <input type="checkbox" id="single-player-toggle" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span>Single-Player Mode (vs NPCs)</span>
+                    </label>
+                    <div id="npc-config" style="display: none; margin-top: 15px;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">Number of NPCs:</label>
+                            <select id="npc-count-select" style="padding: 5px; font-size: 1rem; font-family: 'MedievalSharp', cursive; background: #d7ccc8; color: #3e2723; border: 2px solid #5d4037; border-radius: 4px; width: 100%;">
+                                <option value="1">1 NPC</option>
+                                <option value="2">2 NPCs</option>
+                                <option value="3" selected>3 NPCs</option>
+                            </select>
+                        </div>
+                        <div id="npc-list" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
                 <div id="lobby-settings" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
                     <button id="toggle-music-btn" class="settings-btn">Mute Music</button>
                     <button id="toggle-effects-btn" class="settings-btn">Mute Effects</button>
